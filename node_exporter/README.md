@@ -3,6 +3,8 @@
 Môi trường: CentOS/Ubuntu
 Yêu cầu: Mạng mở thông tới github.com
 
+Cài đặt offline tải releases v1.0.0 [tại đây](https://github.com/mkbyme/shell-scripts/releases/tag/node_exporter_v1.0.0)
+
 ## Hướng dẫn cài đặt
 
 Chạy file `install_nodeexporter.sh` để cài đặt
