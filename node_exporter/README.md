@@ -1,4 +1,4 @@
-# Cài đặt dịch vụ node_exporter
+# Bước 1: Cài đặt dịch vụ node_exporter
 
 Môi trường: CentOS/Ubuntu
 Yêu cầu: Mạng mở thông tới github.com
@@ -44,4 +44,44 @@ sudo bash install_nodeexporter.sh
 ```
 Done
 
+# Bước 2: Cấu hình scrape từ prometheus
+
+Để có thể lấy được metrics node cần bổ sung cấu hình trên file `additional-scrape-configs.yaml` trong `monitor/shared`
+
+Với nội dung như sau, tìm tới đoạn của dự án
+Ví dụ **meinvoice**, sau đó nối tiếp config vào phần của dự án
+
+Yêu cầu:
+
+**`job_name`**: đặt theo tiêu chuẩn `database/node-exporter-[tên host name của máy chủ database]`
+
+Ví dụ: hostname=inv-db-12 => database/node-exporter-inv-db-12
+
+**`labels`**: phải có nhãn `db` với các giá trị sau
+- `mysql`: Dùng cho loại database là mysql
+- `postgresql`: Dùng cho loại database là postgresql
+
+**`namespace`**: Đặt trùng với namespace dự án trên K8SMonitor, ví dụ `meinvoice`
+
+File ví dụ như bên dưới:
+
+```yaml
+
+    - job_name: database/node-exporter-inv-db-12 # phải đặt tên tiền tố là database
+      static_configs:
+      - labels:
+          hostname: inv-db-12
+          namespace: meinvoice
+          db: mysql #chỉ định nhãn là mysql,postgresql
+        targets:
+        - inv-db-12:9100
+
+```
+
+Sau khi sử xong file trên thực hiện apply file
+```sh
+k apply -f  additional-scrape-configs.yaml
+```
+
+Kiểm tra hiển thị trên databoard của team DBE
 
