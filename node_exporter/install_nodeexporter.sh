@@ -68,6 +68,7 @@ EOF
         echo "[Daemon]: Mo dich vu node-exporter khoi chay cung he thong";
         sudo systemctl enable node_exporter;
         echo "[Daemon]: Khoi chay dich vu";
+        sleep 3
         sudo systemctl start node_exporter;
     fi
 
