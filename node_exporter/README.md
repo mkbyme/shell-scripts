@@ -78,7 +78,7 @@ File ví dụ như bên dưới:
 
 ```
 
-Sau khi sử xong file trên thực hiện apply file
+Sau khi sửa xong file trên thực hiện apply file
 ```sh
 k apply -f  additional-scrape-configs.yaml
 ```
