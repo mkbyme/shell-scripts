@@ -7,7 +7,7 @@ Yêu cầu: Mạng mở thông tới github.com
 
 ## Cài đặt offline
 
-Cài đặt offline tải releases v1.0.0 [tại đây](https://github.com/mkbyme/shell-scripts/releases/tag/node_exporter_v1.0.0)
+Cài đặt offline tải releases v1.0.0 [tại đây](https://github.com/mkbyme/shell-scripts/releases/download/node_exporter_v1.0.0/node_exporterscript_setup_nodeexporter_v1.0.0.zip)
 
 ## Hướng dẫn cài đặt
 
