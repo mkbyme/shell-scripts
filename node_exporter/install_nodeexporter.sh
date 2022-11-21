@@ -4,27 +4,31 @@ FILENAME=node_exporter-${VERSION}.linux-amd64.tar.gz;
 URL=https://github.com/prometheus/node_exporter/releases/download/v${VERSION}/${FILENAME};
 
 download_file(){
-    node_exporter_binary="$(pwd)/node_exporter-${VERSION}.linux-amd64/node_exporter";
+    # echo $( dirname -- "$0"; )
+    script_folder_path=$( dirname -- "$0"; )
+    node_exporter_folder="$script_folder_path/node_exporter-${VERSION}.linux-amd64"
+    node_exporter_binary="$node_exporter_folder/node_exporter";
+    file_path=$script_folder_path/$FILENAME
     echo "--------------Download Binary-----------"
     if [[ -e /usr/local/bin/node_exporter ]]; then 
         echo "[Download]: Da co dich node_exporter tren may tai /usr/local/bin/node_exporter , khong thuc hien cai dat tiep."; 
     else 
-        if [[ -e "$FILENAME" ]]; then
+        if [[ -e "$file_path" ]]; then
             echo "[Download]: Da ton tai file zip local, copy ngay";
         else
             echo "[Download]: Tai node_exporter phien ban ${VERSION}"
-            wget $URL;
+            wget $URL --directory-prefix "$script_folder_path/";
             echo "[Download]: Tai xong!"
         fi
-        echo "[Download]: Giai nen node_exporter phien ban ${VERSION}"
-        tar -xzvf $FILENAME;
-        echo "[Download]: Gia- nen xong!"
-        echo "[Download]: Copy file vao /usr/local/bin/"
+        echo "[Download]: Giai nen, node_exporter phien ban ${VERSION} toi '$script_folder_path'"
+        tar -xzvf $file_path --directory $script_folder_path;
+        echo "[Download]: Giai nen, xong!"
+        echo "[Download]: Copy file '$node_exporter_binary' vao '/usr/local/bin/'"
         sudo cp "$node_exporter_binary" /usr/local/bin/
-        echo "[Download]: Copy file vao /usr/local/bin/ xong!"
-        echo "[Download]: Don dep file giai nen"
-        sudo rm -rf "$(pwd)/node_exporter-${VERSION}.linux-amd64"
-        echo "[Download]: Don dep file giai nen, xong!"
+        echo "[Download]: Copy file '$node_exporter_binary' vao '/usr/local/bin/', xong!"
+        echo "[Download]: Don dep file giai nen tai '$node_exporter_folder'"
+        sudo rm -rf "$node_exporter_folder"
+        echo "[Download]: Don dep file giai nen tai '$node_exporter_folder', xong!"
     fi
 
 }

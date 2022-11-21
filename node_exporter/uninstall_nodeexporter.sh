@@ -5,7 +5,7 @@ username=nodeusr
 #--------
 echo "-----------Remove NodeExporter-----------"
 if [[ -e "$daemon_service_path" ]]; then
-    echo "[Service]: top service"
+    echo "[Service]: stop service"
     systemctl stop node_exporter.service
     echo "[Service]: Disable service"
     sudo systemctl disable node_exporter;
