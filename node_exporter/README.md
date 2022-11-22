@@ -57,9 +57,9 @@ Ví dụ **meinvoice**, sau đó nối tiếp config vào phần của dự án
 
 Yêu cầu:
 
-**`job_name`**: đặt theo tiêu chuẩn `database/node-exporter-[tên host name của máy chủ database]`
+**`job_name`**: đặt theo tiêu chuẩn `database/node-exporter-[mã dự án]-[tên host name của máy chủ database]`
 
-Ví dụ: hostname=inv-db-12 => database/node-exporter-inv-db-12
+Ví dụ: hostname=inv-db-12, mã dự án=meinvoice => database/node-exporter-meinvoice-inv-db-12
 
 **`labels`**: phải có nhãn `db` với các giá trị sau
 - `mysql`: Dùng cho loại database là mysql
@@ -71,7 +71,7 @@ File ví dụ như bên dưới:
 
 ```yaml
 
-    - job_name: database/node-exporter-inv-db-12 # phải đặt tên tiền tố là database
+    - job_name: database/node-exporter-meinvoice-inv-db-12 # phải đặt tên tiền tố là database
       static_configs:
       - labels:
           hostname: inv-db-12
