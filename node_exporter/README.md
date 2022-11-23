@@ -11,6 +11,21 @@ Cài đặt offline tải releases v1.0.0 [tại đây](https://github.com/mkbym
 
 ## Hướng dẫn cài đặt
 
+Với cài đặt offline thì sau khi tài file zip trên, copy lên máy chủ và giải nén
+
+```sh
+# di chuyển về thư mục home
+cd ~
+# tạo thư mục temp, và copy file zip qua winscp
+mkdir -p temp
+# di chuyển vào thư mục chứa file zip, unzip
+cd temp
+# giải nén
+unzip node_exporterscript_setup_nodeexporter_v1.0.0.zip
+# di chuyển vào thư mục vừa giải nén và chạy file 
+sudo bash install_nodeexporter.sh
+```
+
 Chạy file `install_nodeexporter.sh` để cài đặt
 
 ```sh
