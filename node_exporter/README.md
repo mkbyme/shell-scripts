@@ -26,9 +26,13 @@ unzip node_exporterscript_setup_nodeexporter_v1.0.0.zip
 sudo bash install_nodeexporter.sh
 ```
 
+Có mạng thì làm như sau:
+
 Chạy file `install_nodeexporter.sh` để cài đặt
 
 ```sh
+# tải file
+curl -O https://raw.githubusercontent.com/mkbyme/shell-scripts/main/node_exporter/install_nodeexporter.sh
 sudo bash install_nodeexporter.sh
 ```
 Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics để kiểm tra dịch vụ đã hoạt động chưa
