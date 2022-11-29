@@ -108,3 +108,21 @@ k apply -f  additional-scrape-configs.yaml
 
 Kiểm tra hiển thị trên databoard của team DBE
 
+# Hướng dẫn kiểm tra trạng thái và xử lý cảnh báo TargetDown
+
+Khi dịch vụ ngừng sẽ nhận được cảnh báo `TargetDown`, kiểm tra dịch vụ qua trình duyệt hoặc curl tới ip_node_cai_dat_exporter:9100
+
+Ví dụ: Remote vào node cần kiểm tra `demo-node-01`
+
+```sh
+# gọi qua curl, nếu trả về dữ liệu là sống, không trả về là chết
+curl 0.0.0.0:9100
+```
+
+```sh
+#kiểm tra trạng thái
+systemctl status node_exporter
+# nếu stop thì thực hiện start lên hoặc restart
+systemctl start node_exporter
+```
+
