@@ -9,7 +9,31 @@ Yêu cầu: Mạng mở thông tới github.com
 
 Cài đặt offline tải releases v1.0.1 [tại đây](https://github.com/mkbyme/shell-scripts/releases/download/node_exporter_v1.0.1/node_exporter_v1.0.1.zip)
 
-## Hướng dẫn cài đặt
+
+## Hướng dẫn cài đặt hàng loạt qua anisible
+
+Sử dụng file playbook tại [anisible.yaml](/https://github.com/mkbyme/shell-scripts/blob/main/node_exporter/anisible.yml)
+
+Hoặc copy nội dung bên dưới
+
+```yaml
+tasks:
+  - name: Transfer script
+    copy: src=/tmp/script_setup_nodeexporter/install_nodeexporter.sh dest=/tmp/node_exporter mode=0755
+
+  - name: Transfer file
+    copy: src=/tmp/script_setup_nodeexporter/node_exporter-1.4.0.linux-amd64.tar.gz dest=/tmp/node_exporter
+
+  - name: Run script
+    command: sudo bash /tmp/node_exporter/install_nodeexporter.sh
+
+  - name: Delete script
+    command: rm -rf /tmp/node_exporter
+```
+
+Sau đó sử dụng anisible để chạy playbook trên.
+
+## Hướng dẫn cài đặt thủ công
 
 Với cài đặt offline thì sau khi tài file zip trên, copy lên máy chủ và giải nén
 
