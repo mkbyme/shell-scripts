@@ -94,6 +94,10 @@ EOF
         if [[ -z "${firewall_rule}" ]]; then
             echo "[Firewall]: chua mo port 9100, thuc hien add rule 9100";
             sudo iptables -I INPUT 1 -p tcp --dport 9100 -j ACCEPT -m comment --comment "node_exporter";
+            echo "[Firewall]: save rules";
+            sudo service iptables save
+            echo "[Firewall]: reload rules";
+            sudo service iptables reload
         else
             echo "[Firewall]: da mo port 9100";
         fi
