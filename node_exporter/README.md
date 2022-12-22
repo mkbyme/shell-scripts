@@ -12,7 +12,7 @@ Cài đặt offline tải releases v1.0.1 [tại đây](https://github.com/mkbym
 
 ## Hướng dẫn cài đặt hàng loạt qua anisible
 
-Sử dụng file playbook tại [anisible.yaml](/https://github.com/mkbyme/shell-scripts/blob/main/node_exporter/anisible.yml)
+Sử dụng file playbook tại [anisible.yaml](/node_exporter/anisible.yml)
 
 Hoặc copy nội dung bên dưới
 
