@@ -45,7 +45,7 @@ mkdir -p temp
 # di chuyển vào thư mục chứa file zip, unzip
 cd temp
 # giải nén
-unzip node_exporterscript_setup_nodeexporter_v1.0.1.zip
+unzip node_exporter_v1.0.1.zip
 # di chuyển vào thư mục vừa giải nén và chạy file 
 sudo bash install_nodeexporter.sh
 ```
