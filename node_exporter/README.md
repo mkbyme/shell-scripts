@@ -29,6 +29,9 @@ tasks:
 
   - name: Delete script
     command: rm -rf /tmp/node_exporter
+
+  - name: Check and start service
+    command: sudo systemctl start node_exporter
 ```
 
 Sau đó sử dụng anisible để chạy playbook trên.
