@@ -1,3 +1,4 @@
+hosts: mysql-db-01 #danh sách máy chủ cần chạy
 tasks:
   - name: Transfer script
     copy: src=/tmp/script_setup_nodeexporter/install_nodeexporter.sh dest=/tmp/node_exporter mode=0755
@@ -11,5 +12,5 @@ tasks:
   - name: Delete script
     command: rm -rf /tmp/node_exporter
 
-  - name: Check and start service
+  - name: Start node_exporter
     command: sudo systemctl start node_exporter
