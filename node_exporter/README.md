@@ -96,42 +96,45 @@ Done
 
 # Bước 2: Cấu hình scrape từ prometheus
 
-Để có thể lấy được metrics node cần bổ sung cấu hình trên file `additional-scrape-configs.yaml` trong `monitor/shared`
+Để có thể lấy được metrics node cần cài đặt thêm chart database-resource trong `monitor/shared/template/database-resource-monitor-value.yaml`
+Copy file `database-resource-monitor-value.yaml` về thư mục dự án trên máy master K8SMonitor.
 
-Với nội dung như sau, tìm tới đoạn của dự án
-Ví dụ **meinvoice**, sau đó nối tiếp config vào phần của dự án
-
-Yêu cầu:
-
-**`job_name`**: đặt theo tiêu chuẩn `database/node-exporter-[mã dự án]-[tên host name của máy chủ database]`
-
-Ví dụ: hostname=inv-db-12, mã dự án=meinvoice => database/node-exporter-meinvoice-inv-db-12
-
-**`labels`**: phải có nhãn `db` với các giá trị sau
-- `mysql`: Dùng cho loại database là mysql
-- `postgresql`: Dùng cho loại database là postgresql
-
-**`namespace`**: Đặt trùng với namespace dự án trên K8SMonitor, ví dụ `meinvoice`
-
-File ví dụ như bên dưới:
+Nhập thông tin hostname và ip sau đó thực hiện cài đặt chart vào namespace của dự án
+Sửa lại `group` và danh sách `services`
 
 ```yaml
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
 
-    - job_name: database/node-exporter-meinvoice-inv-db-12 # phải đặt tên tiền tố là database
-      static_configs:
-      - labels:
-          hostname: inv-db-12
-          namespace: meinvoice
-          db: mysql #chỉ định nhãn là mysql,postgresql
-        targets:
-        - inv-db-12:9100
+service:
+  type: ClusterIP
+  port: 80
 
+configs:
+  #port mac dinh cho dich vu node_exporter
+  port: 9100 
+  #MISA EDIT01: khoi du an
+  group: "tcdn"
+  #MISA EDIT02: loai db mysql|postgresql|mongo
+  dbType: "postgresql" #mysql|postgresql|mongo
+  serviceAdditionalsLabels: []
+  
+#MISA EDIT03: danh sach hostname va ip, port toi dich vu node_exporter database
+services:
+  hl-scl-pg00133a:
+    ip: 172.16.195.204
+    # port: 9200 #ghi de lai port trong configs.port neu dich vu o port khac  
+  hl-scl-pg00134a:
+    ip: 172.16.195.205
 ```
-
-Sau khi sửa xong file trên thực hiện apply file
+Sau đó tiến hành cài đặt chart
 ```sh
-k apply -f  additional-scrape-configs.yaml
+helm -n meinvoice upgrade -i demo-resource /home/nthieu/monitor/shared/template/database-resource-monitor -f mysql_database_resource-values.yaml
 ```
+Trong đó: 
+- demo-resource: tên release
+- /home/nthieu/monitor/shared/template/database-resource-monitor: đường dẫn chart
 
 Kiểm tra hiển thị trên databoard của team DBE
 
