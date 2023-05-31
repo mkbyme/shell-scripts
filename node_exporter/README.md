@@ -5,10 +5,37 @@
 Môi trường: CentOS/Ubuntu
 Yêu cầu: Mạng mở thông tới github.com
 
+
+```sh
+# tải file
+curl -O https://raw.githubusercontent.com/mkbyme/shell-scripts/main/node_exporter/install_nodeexporter.sh
+sudo bash install_nodeexporter.sh
+```
+Chạy file `install_nodeexporter.sh` để cài đặt
+
+Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics để kiểm tra dịch vụ đã hoạt động chưa
+
 ## Cài đặt offline
 
 Cài đặt offline tải releases v1.0.1 [tại đây](https://github.com/mkbyme/shell-scripts/releases/download/node_exporter_v1.0.1/node_exporter_v1.0.1.zip)
 
+
+Với cài đặt offline thì sau khi tài file zip trên, copy lên máy chủ và giải nén sử dụng script dưới đây.
+
+```sh
+# di chuyển về thư mục home
+cd ~
+# tạo thư mục temp, và copy file zip qua winscp
+mkdir -p temp
+# di chuyển vào thư mục chứa file zip, unzip
+cd temp
+# giải nén
+unzip node_exporter_v1.0.1.zip
+# di chuyển vào thư mục vừa giải nén và chạy file 
+sudo bash install_nodeexporter.sh
+```
+
+Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics để kiểm tra dịch vụ đã hoạt động chưa
 
 ## Hướng dẫn cài đặt hàng loạt qua anisible
 
@@ -35,34 +62,6 @@ tasks:
 ```
 
 Sau đó sử dụng anisible để chạy playbook trên.
-
-## Hướng dẫn cài đặt thủ công
-
-Với cài đặt offline thì sau khi tài file zip trên, copy lên máy chủ và giải nén
-
-```sh
-# di chuyển về thư mục home
-cd ~
-# tạo thư mục temp, và copy file zip qua winscp
-mkdir -p temp
-# di chuyển vào thư mục chứa file zip, unzip
-cd temp
-# giải nén
-unzip node_exporter_v1.0.1.zip
-# di chuyển vào thư mục vừa giải nén và chạy file 
-sudo bash install_nodeexporter.sh
-```
-
-Có mạng thì làm như sau:
-
-Chạy file `install_nodeexporter.sh` để cài đặt
-
-```sh
-# tải file
-curl -O https://raw.githubusercontent.com/mkbyme/shell-scripts/main/node_exporter/install_nodeexporter.sh
-sudo bash install_nodeexporter.sh
-```
-Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics để kiểm tra dịch vụ đã hoạt động chưa
 
 ## Gỡ bỏ dịch vụ
 
@@ -96,41 +95,50 @@ Done
 
 # Bước 2: Cấu hình scrape từ prometheus
 
-Để có thể lấy được metrics node cần bổ sung cấu hình trên file `additional-scrape-configs.yaml` trong `monitor/shared`
+## Sử dụng chart database-resource
 
-Với nội dung như sau, tìm tới đoạn của dự án
-Ví dụ **meinvoice**, sau đó nối tiếp config vào phần của dự án
+Copy file cấu hình trong `monitor/shared/template/database-resource-monitor-value.yaml`
 
-Yêu cầu:
+Mở file ra và sửa các thông tin
+- `configs.group`: tên khối dự án
+- `configs.dbType`: loại db mysql|postgresql|mongo
+- `services`: nhập danh sách tên máy chủ và ip, port dịch vụ node_exporter (mặc định 9100)
 
-**`job_name`**: đặt theo tiêu chuẩn `database/node-exporter-[mã dự án]-[tên host name của máy chủ database]`
-
-Ví dụ: hostname=inv-db-12, mã dự án=meinvoice => database/node-exporter-meinvoice-inv-db-12
-
-**`labels`**: phải có nhãn `db` với các giá trị sau
-- `mysql`: Dùng cho loại database là mysql
-- `postgresql`: Dùng cho loại database là postgresql
-
-**`namespace`**: Đặt trùng với namespace dự án trên K8SMonitor, ví dụ `meinvoice`
-
-File ví dụ như bên dưới:
+Ví dụ 
 
 ```yaml
-
-    - job_name: database/node-exporter-meinvoice-inv-db-12 # phải đặt tên tiền tố là database
-      static_configs:
-      - labels:
-          hostname: inv-db-12
-          namespace: meinvoice
-          db: mysql #chỉ định nhãn là mysql,postgresql
-        targets:
-        - inv-db-12:9100
-
+configs:
+  #port mac dinh cho dich vu node_exporter
+  port: 9100 
+  #MISA EDIT01: khoi du an
+  group: "doanhnghiep"
+  #MISA EDIT02: loai db mysql|postgresql|mongo
+  dbType: "mysql" #mysql|postgresql|mongo
+  serviceAdditionalsLabels: []
+  
+#MISA EDIT03: danh sach hostname va ip, port toi dich vu node_exporter database
+services:
+  doanhnghiep-mysql-01:
+    ip: 192.168.100.1
+    # port: 9200 #ghi de lai port trong configs.port neu dich vu o port khac  
+  doanhnghiep-mysql-02:
+    ip: 192.168.100.2
 ```
 
-Sau khi sửa xong file trên thực hiện apply file
+Sau đó cài đặt chart với values trên.
+
 ```sh
-k apply -f  additional-scrape-configs.yaml
+# helm -n [namespace dự án] [tên reslease] /monitor/shared/template/database-resources-monitor -f  atabase-resource-monitor-value.yaml
+helm -n demo doanhnghiep-mysql monitor/shared/template/database-resources-monitor -f  atabase-resource-monitor-value.yaml
+```
+
+Kiểm tra xem dịch vụ đã thông chưa
+
+```sh
+# tìm service vừa cài đặt, lấy thông tin ClusterIp
+kubeclt -n demo get svc | grep doanhnghiep-mysql 
+# curl ip:port # của dịch vụ exporter trên, nếu ra dữ liệu up = 1 là ok
+curl 10.0.1.43:9100/metrics | grep up
 ```
 
 Kiểm tra hiển thị trên databoard của team DBE
