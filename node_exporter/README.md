@@ -5,12 +5,12 @@
 Môi trường: CentOS/Ubuntu
 Yêu cầu: Mạng mở thông tới github.com
 
-
 ```sh
 # tải file
 curl -O https://raw.githubusercontent.com/mkbyme/shell-scripts/main/node_exporter/install_nodeexporter.sh
 sudo bash install_nodeexporter.sh
 ```
+
 Chạy file `install_nodeexporter.sh` để cài đặt
 
 Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics để kiểm tra dịch vụ đã hoạt động chưa
@@ -18,7 +18,6 @@ Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics 
 ## Cài đặt offline
 
 Cài đặt offline tải releases v1.0.1 [tại đây](https://github.com/mkbyme/shell-scripts/releases/download/node_exporter_v1.0.1/node_exporter_v1.0.1.zip)
-
 
 Với cài đặt offline thì sau khi tài file zip trên, copy lên máy chủ và giải nén sử dụng script dưới đây.
 
@@ -70,6 +69,7 @@ Chạy file `install_nodeexporter.sh` để cài đặt
 ```sh
 sudo bash uninstall_nodeexporter.sh
 ```
+
 ## Cập nhật phiên bản
 
 Để cập nhật dịch vụ cần thực hiện cập nhật phiên bản trong file `install_nodeexporter.sh`
@@ -83,6 +83,7 @@ Ví dụ: **1.4.0**
 VERSION=1.4.0; #nhập thông tin phiên bản tại đây
 FILENAME=node_exporter-${VERSION}.linux-amd64.tar.gz;
 ```
+
 Sau khi sửa xong lưu lại và chạy lệnh bên dưới để cập nhật
 
 ```sh
@@ -91,6 +92,7 @@ sudo bash uninstall_nodeexporter.sh
 #cài lại bản mới
 sudo bash install_nodeexporter.sh
 ```
+
 Done
 
 # Bước 2: Cấu hình scrape từ prometheus
@@ -100,23 +102,24 @@ Done
 Copy file cấu hình trong `monitor/shared/template/database-resource-monitor-value.yaml`
 
 Mở file ra và sửa các thông tin
+
 - `configs.group`: tên khối dự án
 - `configs.dbType`: loại db mysql|postgresql|mongo
 - `services`: nhập danh sách tên máy chủ và ip, port dịch vụ node_exporter (mặc định 9100)
 
-Ví dụ 
+Ví dụ
 
 ```yaml
 configs:
   #port mac dinh cho dich vu node_exporter
   port: 9100 
-  #MISA EDIT01: khoi du an
+  # EDIT01: khoi du an
   group: "doanhnghiep"
-  #MISA EDIT02: loai db mysql|postgresql|mongo
+  # EDIT02: loai db mysql|postgresql|mongo
   dbType: "mysql" #mysql|postgresql|mongo
   serviceAdditionalsLabels: []
   
-#MISA EDIT03: danh sach hostname va ip, port toi dich vu node_exporter database
+# EDIT03: danh sach hostname va ip, port toi dich vu node_exporter database
 services:
   doanhnghiep-mysql-01:
     ip: 192.168.100.1
@@ -160,4 +163,3 @@ systemctl status node_exporter
 # nếu stop thì thực hiện start lên hoặc restart
 systemctl start node_exporter
 ```
-
