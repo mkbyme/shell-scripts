@@ -32,6 +32,8 @@ cd temp
 unzip node_exporter_v1.0.1.zip
 # di chuyển vào thư mục vừa giải nén và chạy file 
 sudo bash install_nodeexporter.sh
+# trường hợp cần cài đặt ở cổng khác hoặc version khác sử dụng thêm tham số --port=[cổng, vd: 10100] --version=[phiên bản, vd: 1.5.0]
+# sudo bash install_nodeexporter.sh --port 10100
 ```
 
 Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics để kiểm tra dịch vụ đã hoạt động chưa
@@ -80,7 +82,7 @@ Ví dụ: **1.4.0**
 
 ```sh
 #!/bin/bash
-VERSION=1.4.0; #nhập thông tin phiên bản tại đây
+VERSION=1.4.0; #nhập thông tin phiên bản tại đây hoặc qua param --version 1.4.0
 FILENAME=node_exporter-${VERSION}.linux-amd64.tar.gz;
 ```
 

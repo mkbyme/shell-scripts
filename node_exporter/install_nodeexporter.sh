@@ -1,58 +1,95 @@
 #!/bin/bash
-VERSION=1.4.0;
-FILENAME=node_exporter-${VERSION}.linux-amd64.tar.gz;
-URL=https://github.com/prometheus/node_exporter/releases/download/v${VERSION}/${FILENAME};
+
+# Default parameters
+DEFAULT_PORT=9100
+PORT=$DEFAULT_PORT
+DEFAULT_VERSION=1.4.0
+VERSION=$DEFAULT_VERSION
+
+# Usage function to display supported CLI parameters
+usage() {
+    echo "Usage: $0 [options]"
+    echo "Options:"
+    echo "  --port <port>        Specify the port for node_exporter (default: $DEFAULT_PORT)"
+    echo "  --version <version>  Specify the version of node_exporter (default: $DEFAULT_VERSION)"
+    echo "Example: $0 --port 9100 --version 1.4.0"
+
+    if ! [[ $1 ]]; then
+        exit 1;
+    fi
+}
+
+# Parse command line arguments
+while [[ "$#" -gt 0 ]]; do
+    case $1 in
+        --port) PORT="$2"; shift ;;
+        --version) VERSION="$2"; shift ;;
+        -h|--help) usage ;;
+        *) echo "Unknown parameter: $1"; usage ;;
+    esac
+    shift
+done
+
+# Validate port number
+if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+    echo "Error: Invalid port number. Please specify a port between 1 and 65535."
+    exit 1
+fi
+
+# Validate version format (basic validation for x.y.z format)
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo "Error: Invalid version format. Please specify version in x.y.z format (e.g., 1.4.0)."
+    exit 1
+fi
+
+FILENAME=node_exporter-${VERSION}.linux-amd64.tar.gz
+URL=https://github.com/prometheus/node_exporter/releases/download/v${VERSION}/${FILENAME}
 
 download_file(){
-    # echo $( dirname -- "$0"; )
-    script_folder_path=$( dirname -- "$0"; )
+    script_folder_path=$( dirname -- "$0" )
     node_exporter_folder="$script_folder_path/node_exporter-${VERSION}.linux-amd64"
-    node_exporter_binary="$node_exporter_folder/node_exporter";
+    node_exporter_binary="$node_exporter_folder/node_exporter"
     file_path=$script_folder_path/$FILENAME
     echo "--------------Download Binary-----------"
     if [[ -e /usr/local/bin/node_exporter ]]; then 
-        echo "[Download]: Da co dich node_exporter tren may tai /usr/local/bin/node_exporter , khong thuc hien cai dat tiep."; 
+        echo "[Download]: Node_exporter already exists at /usr/local/bin/node_exporter, skipping installation."
     else 
         if [[ -e "$file_path" ]]; then
-            echo "[Download]: Da ton tai file zip local, copy ngay";
+            echo "[Download]: Local zip file already exists, copying directly"
         else
-            echo "[Download]: Tai node_exporter phien ban ${VERSION}"
-            wget $URL --directory-prefix "$script_folder_path/";
-            echo "[Download]: Tai xong!"
+            echo "[Download]: Downloading node_exporter version ${VERSION}"
+            wget $URL --directory-prefix "$script_folder_path/"
+            echo "[Download]: Download complete!"
         fi
-        echo "[Download]: Giai nen, node_exporter phien ban ${VERSION} toi '$script_folder_path'"
-        tar -xzvf $file_path --directory $script_folder_path;
-        echo "[Download]: Giai nen, xong!"
-        echo "[Download]: Copy file '$node_exporter_binary' vao '/usr/local/bin/'"
+        echo "[Download]: Extracting node_exporter version ${VERSION} to '$script_folder_path'"
+        tar -xzvf $file_path --directory $script_folder_path
+        echo "[Download]: Extraction complete!"
+        echo "[Download]: Copying '$node_exporter_binary' to '/usr/local/bin/'"
         sudo cp "$node_exporter_binary" /usr/local/bin/
-        echo "[Download]: Copy file '$node_exporter_binary' vao '/usr/local/bin/', xong!"
-        echo "[Download]: Don dep file giai nen tai '$node_exporter_folder'"
+        echo "[Download]: Copy complete!"
+        echo "[Download]: Cleaning up extracted files at '$node_exporter_folder'"
         sudo rm -rf "$node_exporter_folder"
-        echo "[Download]: Don dep file giai nen tai '$node_exporter_folder', xong!"
+        echo "[Download]: Cleanup complete!"
     fi
-
 }
 
 create_daemon_service(){
-    #tao user
     echo "--------------Create User-----------"
     username="nodeusr"
-    exists_user=$(cat /etc/passwd | grep ${username});
+    exists_user=$(cat /etc/passwd | grep ${username})
     if [[ -z "${exists_user}" ]]; then
-        echo "[User]: Tao user '${username}'";
-        sudo useradd -rs /bin/false $username;
+        echo "[User]: Creating user '${username}'"
+        sudo useradd -rs /bin/false $username
     else
-        echo "[User]: User '${username}' da ton tai, khong thuc hien tao user";
-    fi;
+        echo "[User]: User '${username}' already exists, skipping user creation"
+    fi
 
-    #tao daeomon-service
     echo "--------------Create Daemon Service-----------"
-
     service_file="/etc/systemd/system/node_exporter.service"
     if [[ -e "${service_file}" ]]; then 
-        echo "[Daemon]: File daemon ${service_file} da ton tai, bo qua viec khoi tao file";
+        echo "[Daemon]: Daemon file ${service_file} already exists, skipping creation"
     else
-        echo "[Daemon]: File daemon ${service_file} chua ton tai, thuc hien tao file va setup daemon.";
+        echo "[Daemon]: Daemon file ${service_file} does not exist, creating and setting up daemon"
         sudo cat <<EOF > "$service_file"
 [Unit]
 Description=Node Exporter
@@ -62,57 +99,58 @@ After=network.target
 User=$username
 Group=$username
 Type=simple
-ExecStart=/usr/local/bin/node_exporter
+ExecStart=/usr/local/bin/node_exporter --web.listen-address=:${PORT}
 
 [Install]
 WantedBy=multi-user.target
 EOF
-        echo "[Daemon]: Reload daemon";
-        sudo systemctl daemon-reload;
-        echo "[Daemon]: Mo dich vu node-exporter khoi chay cung he thong";
-        sudo systemctl enable node_exporter;
-        echo "[Daemon]: Khoi chay dich vu";
+        echo "[Daemon]: Reloading daemon"
+        sudo systemctl daemon-reload
+        echo "[Daemon]: Enabling node-exporter to start on boot"
+        sudo systemctl enable node_exporter
+        echo "[Daemon]: Starting service"
         sleep 3
-        sudo systemctl start node_exporter;
+        sudo systemctl start node_exporter
     fi
 
-    # add rule firewall
-    # check iptables or ufw
     echo "--------------Add Firewall-----------"
     if command -v ufw &> /dev/null && [[ -n "$(sudo ufw status | grep ': active')" ]]; then 
-        #co ufw va duoc bat status: active thi moi su dung ufw
-        echo "[Firewall]: using UFW";
-        if [[ -z "$(sudo ufw status | grep 9100)" ]]; then
-            echo "[Firewall]: chua mo port 9100, thuc hien add rule 9100";
-            sudo ufw allow 9100
+        echo "[Firewall]: Using UFW"
+        if [[ -z "$(sudo ufw status | grep $PORT)" ]]; then
+            echo "[Firewall]: Port $PORT not open, adding rule"
+            sudo ufw allow $PORT
         else
-            echo "[Firewall]: da mo port 9100";
+            echo "[Firewall]: Port $PORT already open"
         fi
     else 
-        echo "[Firewall]: using iptables";
-        firewall_rule=$(sudo iptables -L INPUT | grep node_exporter);
+        echo "[Firewall]: Using iptables"
+        firewall_rule=$(sudo iptables -L INPUT | grep node_exporter)
         if [[ -z "${firewall_rule}" ]]; then
-            echo "[Firewall]: chua mo port 9100, thuc hien add rule 9100";
-            sudo iptables -I INPUT 1 -p tcp --dport 9100 -j ACCEPT -m comment --comment "node_exporter";
+            echo "[Firewall]: Port $PORT not open, adding rule"
+            sudo iptables -I INPUT 1 -p tcp --dport $PORT -j ACCEPT -m comment --comment "node_exporter"
         else
-            echo "[Firewall]: da mo port 9100";
+            echo "[Firewall]: Port $PORT already open"
         fi
 
-        echo "[Firewall]: save rules";
+        echo "[Firewall]: Saving rules"
         sudo service iptables save
-        echo "[Firewall]: reload rules";
+        echo "[Firewall]: Reloading rules"
         sudo service iptables reload
     fi    
 }
 
 run(){
     echo "-----------SETUP NODE EXPORTER ${VERSION}------------"
-    echo "[Setup]: Kiem tra va cai dat node_exporter:${VERSION}"
-    download_file;
-    create_daemon_service;
+    echo "[Setup]: Checking and installing node_exporter:${VERSION} on port ${PORT}"
+    download_file
+    create_daemon_service
     echo "-----------------------"
-    echo "[Setup]: da cai dat xong"; 
+    echo "[Setup]: Installation complete"
     echo "-----------------------"
-    echo "[Setup]: Kiem tra dich vu tai http://$(hostname):9100/metrics";
+    echo "[Setup]: Check service at http://$(hostname):${PORT}/metrics"
 }
-run;
+
+# Display usage information before running
+echo "Supported CLI parameters:"
+usage 0
+run
