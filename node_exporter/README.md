@@ -17,7 +17,7 @@ Sau đó mở trình duyệt tại đường dẫn http://hostname:9100/metrics 
 
 ## Cài đặt offline
 
-Cài đặt offline tải releases v1.0.1 [tại đây](https://github.com/mkbyme/shell-scripts/releases/download/node_exporter_v1.0.1/node_exporter_v1.0.1.zip)
+Cài đặt offline tải releases lastest [tại đây](https://github.com/mkbyme/shell-scripts/releases)
 
 Với cài đặt offline thì sau khi tài file zip trên, copy lên máy chủ và giải nén sử dụng script dưới đây.
 
