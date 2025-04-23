@@ -2,6 +2,7 @@
 
 # Default parameters
 DEFAULT_PORT=9100
+FALLBACK_PORT=10100
 PORT=$DEFAULT_PORT
 node_exporter_binary=/usr/local/bin/node_exporter
 daemon_service_path=/etc/systemd/system/node_exporter.service
@@ -11,11 +12,11 @@ username=nodeusr
 usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  --port <port>        Specify the port used by node_exporter (default: $DEFAULT_PORT)"
+    echo "  --port <port>        Specify the port used by node_exporter (default: $DEFAULT_PORT, also checks $FALLBACK_PORT if no port specified)"
     echo "Example: $0 --port 9101"
     
-    if ! [[ $1 ]]; then
-        exit 1;
+    if [[ -z "$1" ]]; then
+        exit 1
     fi
 }
 
@@ -29,10 +30,12 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# Validate port number
-if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
-    echo "Error: Invalid port number. Please specify a port between 1 and 65535."
-    exit 1
+# Validate port number if specified
+if [[ "$PORT" != "$DEFAULT_PORT" ]]; then
+    if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
+        echo "Error: Invalid port number. Please specify a port between 1 and 65535."
+        exit 1
+    fi
 fi
 
 # Display usage information before running
@@ -61,29 +64,39 @@ else
 fi
 echo "------------"
 # Firewall rule
-echo "[Firewall]: Removing firewall rule for port $PORT"
+echo "[Firewall]: Removing firewall rule(s)"
+if [[ "$PORT" == "$DEFAULT_PORT" ]]; then
+    ports_to_check=("$DEFAULT_PORT" "$FALLBACK_PORT")
+else
+    ports_to_check=("$PORT")
+fi
+
 if command -v ufw &> /dev/null && [[ -n "$(sudo ufw status | grep ': active')" ]]; then 
     echo "[Firewall]: Using UFW"
-    if [[ -n "$(sudo ufw status | grep $PORT)" ]]; then
-        echo "[Firewall]: Removing rule for node_exporter port $PORT"
-        sudo ufw delete allow $PORT
-    else
-        echo "[Firewall]: No rule found for node_exporter port $PORT, skipping"
-    fi
+    for port in "${ports_to_check[@]}"; do
+        if [[ -n "$(sudo ufw status | grep $port)" ]]; then
+            echo "[Firewall]: Removing rule for node_exporter port $port"
+            sudo ufw delete allow $port
+        else
+            echo "[Firewall]: No rule found for node_exporter port $port, skipping"
+        fi
+    done
 else 
     echo "[Firewall]: Using iptables"
-    firewall_rule=$(sudo iptables -L INPUT -n --line-numbers | grep "$PORT.*node_exporter")
-    if [[ -z "${firewall_rule}" ]]; then
-        echo "[Firewall]: No rule found for node_exporter port $PORT, skipping"
-    else
-        rule_number=$(echo "$firewall_rule" | awk '{print $1}')
-        echo "[Firewall]: Removing rule for node_exporter port $PORT"
-        sudo iptables -D INPUT "$rule_number"
-        echo "[Firewall]: Saving iptables rules"
-        sudo service iptables save
-        echo "[Firewall]: Reloading iptables rules"
-        sudo service iptables reload
-    fi
+    for port in "${ports_to_check[@]}"; do
+        firewall_rule=$(sudo iptables -L INPUT -n --line-numbers | grep "$port.*node_exporter")
+        if [[ -z "${firewall_rule}" ]]; then
+            echo "[Firewall]: No rule found for node_exporter port $port, skipping"
+        else
+            rule_number=$(echo "$firewall_rule" | awk '{print $1}')
+            echo "[Firewall]: Removing rule for node_exporter port $port"
+            sudo iptables -D INPUT "$rule_number"
+            echo "[Firewall]: Saving iptables rules"
+            sudo service iptables save
+            echo "[Firewall]: Reloading iptables rules"
+            sudo service iptables reload
+        fi
+    done
 fi
 echo "------------"
 # Remove user

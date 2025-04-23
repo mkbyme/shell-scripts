@@ -2,6 +2,7 @@
 
 # Default parameters
 DEFAULT_PORT=9100
+FALLBACK_PORT=10100
 PORT=$DEFAULT_PORT
 DEFAULT_VERSION=1.4.0
 VERSION=$DEFAULT_VERSION
@@ -10,13 +11,24 @@ VERSION=$DEFAULT_VERSION
 usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  --port <port>        Specify the port for node_exporter (default: $DEFAULT_PORT)"
+    echo "  --port <port>        Specify the port for node_exporter (default: $DEFAULT_PORT, fallback: $FALLBACK_PORT if $DEFAULT_PORT is in use)"
     echo "  --version <version>  Specify the version of node_exporter (default: $DEFAULT_VERSION)"
     echo "Example: $0 --port 9100 --version 1.4.0"
-
-    if ! [[ $1 ]]; then
-        exit 1;
+    
+    if [[ -z "$1" ]]; then
+        exit 1
     fi
+}
+
+# Function to check if a port is in use
+check_port() {
+    local port=$1
+    if command -v ss >/dev/null 2>&1; then
+        ss -tuln | grep -q ":${port}\b" && return 0
+    elif command -v netstat >/dev/null 2>&1; then
+        netstat -tuln | grep -q ":${port}\b" && return 0
+    fi
+    return 1
 }
 
 # Parse command line arguments
@@ -29,6 +41,18 @@ while [[ "$#" -gt 0 ]]; do
     esac
     shift
 done
+
+# If no port specified, check if default port is in use and switch to fallback if needed
+if [[ "$PORT" == "$DEFAULT_PORT" ]]; then
+    if check_port "$DEFAULT_PORT"; then
+        echo "[Port]: Default port $DEFAULT_PORT is in use, switching to fallback port $FALLBACK_PORT"
+        PORT=$FALLBACK_PORT
+        if check_port "$FALLBACK_PORT"; then
+            echo "Error: Fallback port $FALLBACK_PORT is also in use. Please specify a free port using --port."
+            exit 1
+        fi
+    fi
+fi
 
 # Validate port number
 if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
