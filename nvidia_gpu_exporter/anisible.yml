@@ -1,0 +1,16 @@
+hosts: gpu-hosts #danh sách máy chủ cần chạy
+tasks:
+  - name: Transfer script
+    copy: src=/tmp/script_setup_gpuexporter/install_gpuexporter.sh dest=/tmp/gpu_exporter mode=0755
+
+  - name: Transfer file
+    copy: src=/tmp/script_setup_gpuexporter/nvidia-gpu-exporter_1.3.2_linux_amd64.deb dest=/tmp/gpu_exporter
+
+  - name: Run script
+    command: sudo bash /tmp/gpu_exporter/install_gpuexporter.sh
+
+  - name: Delete script
+    command: rm -rf /tmp/gpu_exporter
+
+  - name: Start nvidia-gpu-exporter
+    command: sudo systemctl start nvidia-gpu-exporter

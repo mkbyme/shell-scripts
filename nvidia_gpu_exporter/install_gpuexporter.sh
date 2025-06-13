@@ -1,26 +1,23 @@
 #!/bin/bash
 
 # Default parameters
-DEFAULT_PORT=9100
-FALLBACK_PORT=10100
+DEFAULT_PORT=9835
+FALLBACK_PORT=19835
 PORT=$DEFAULT_PORT
-DEFAULT_VERSION=1.4.0
+DEFAULT_VERSION=1.3.2
 VERSION=$DEFAULT_VERSION
 
-# Usage function to display supported CLI parameters
 usage() {
     echo "Usage: $0 [options]"
     echo "Options:"
-    echo "  --port <port>        Specify the port for node_exporter (default: $DEFAULT_PORT, fallback: $FALLBACK_PORT if $DEFAULT_PORT is in use)"
-    echo "  --version <version>  Specify the version of node_exporter (default: $DEFAULT_VERSION)"
-    echo "Example: $0 --port 9100 --version 1.4.0"
-    
+    echo "  --port <port>        Specify the port for nvidia_gpu_exporter (default: $DEFAULT_PORT, fallback: $FALLBACK_PORT if $DEFAULT_PORT is in use)"
+    echo "  --version <version>  Specify the version of nvidia_gpu_exporter (default: $DEFAULT_VERSION)"
+    echo "Example: $0 --port 9835 --version 1.3.2"
     if [[ -z "$1" ]]; then
         exit 1
     fi
 }
 
-# Function to check if a port is in use
 check_port() {
     local port=$1
     if command -v ss >/dev/null 2>&1; then
@@ -31,7 +28,6 @@ check_port() {
     return 1
 }
 
-# Parse command line arguments
 while [[ "$#" -gt 0 ]]; do
     case $1 in
         --port) PORT="$2"; shift ;;
@@ -42,7 +38,6 @@ while [[ "$#" -gt 0 ]]; do
     shift
 done
 
-# If no port specified, check if default port is in use and switch to fallback if needed
 if [[ "$PORT" == "$DEFAULT_PORT" ]]; then
     if check_port "$DEFAULT_PORT"; then
         echo "[Port]: Default port $DEFAULT_PORT is in use, switching to fallback port $FALLBACK_PORT"
@@ -54,52 +49,42 @@ if [[ "$PORT" == "$DEFAULT_PORT" ]]; then
     fi
 fi
 
-# Validate port number
 if ! [[ "$PORT" =~ ^[0-9]+$ ]] || [ "$PORT" -lt 1 ] || [ "$PORT" -gt 65535 ]; then
     echo "Error: Invalid port number. Please specify a port between 1 and 65535."
     exit 1
 fi
 
-# Validate version format (basic validation for x.y.z format)
 if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-    echo "Error: Invalid version format. Please specify version in x.y.z format (e.g., 1.4.0)."
+    echo "Error: Invalid version format. Please specify version in x.y.z format (e.g., 1.3.2)."
     exit 1
 fi
 
-FILENAME=node_exporter-${VERSION}.linux-amd64.tar.gz
-URL=https://github.com/prometheus/node_exporter/releases/download/v${VERSION}/${FILENAME}
+FILENAME=nvidia-gpu-exporter_${VERSION}_linux_amd64.deb
+URL=https://github.com/utkuozdemir/nvidia_gpu_exporter/releases/download/v${VERSION}/${FILENAME}
 
-download_file(){
+install_exporter() {
     script_folder_path=$( dirname -- "$0" )
-    node_exporter_folder="$script_folder_path/node_exporter-${VERSION}.linux-amd64"
-    node_exporter_binary="$node_exporter_folder/node_exporter"
     file_path=$script_folder_path/$FILENAME
     echo "--------------Download Binary-----------"
-    if [[ -e /usr/local/bin/node_exporter ]]; then 
-        echo "[Download]: Node_exporter already exists at /usr/local/bin/node_exporter, skipping installation."
+    if [[ -e /usr/local/bin/nvidia-gpu-exporter ]]; then 
+        echo "[Download]: nvidia-gpu-exporter already exists at /usr/local/bin/nvidia-gpu-exporter, skipping installation."
     else 
         if [[ -e "$file_path" ]]; then
-            echo "[Download]: Local zip file already exists, copying directly"
+            echo "[Download]: Local deb file already exists, installing directly"
         else
-            echo "[Download]: Downloading node_exporter version ${VERSION}"
+            echo "[Download]: Downloading nvidia-gpu-exporter version ${VERSION}"
             wget $URL --directory-prefix "$script_folder_path/"
             echo "[Download]: Download complete!"
         fi
-        echo "[Download]: Extracting node_exporter version ${VERSION} to '$script_folder_path'"
-        tar -xzvf $file_path --directory $script_folder_path
-        echo "[Download]: Extraction complete!"
-        echo "[Download]: Copying '$node_exporter_binary' to '/usr/local/bin/'"
-        sudo cp "$node_exporter_binary" /usr/local/bin/
-        echo "[Download]: Copy complete!"
-        echo "[Download]: Cleaning up extracted files at '$node_exporter_folder'"
-        sudo rm -rf "$node_exporter_folder"
-        echo "[Download]: Cleanup complete!"
+        echo "[Download]: Installing nvidia-gpu-exporter version ${VERSION}"
+        sudo dpkg -i $file_path
+        echo "[Download]: Install complete!"
     fi
 }
 
-create_daemon_service(){
+create_daemon_service() {
     echo "--------------Create User-----------"
-    username="nodeusr"
+    username="gpuusr"
     exists_user=$(cat /etc/passwd | grep ${username})
     if [[ -z "${exists_user}" ]]; then
         echo "[User]: Creating user '${username}'"
@@ -109,34 +94,32 @@ create_daemon_service(){
     fi
 
     echo "--------------Create Daemon Service-----------"
-    service_file="/etc/systemd/system/node_exporter.service"
+    service_file="/etc/systemd/system/nvidia-gpu-exporter.service"
     if [[ -e "${service_file}" ]]; then 
         echo "[Daemon]: Daemon file ${service_file} already exists, skipping creation"
     else
         echo "[Daemon]: Daemon file ${service_file} does not exist, creating and setting up daemon"
         sudo cat <<EOF > "$service_file"
 [Unit]
-Description=Node Exporter
+Description=NVIDIA GPU Exporter
 After=network.target
 
 [Service]
 User=$username
 Group=$username
 Type=simple
-ExecStart=/usr/local/bin/node_exporter --web.listen-address=:${PORT} 
-    --collector.netdev.device-exclude="^(veth|docker).*" 
-    --collector.netclass.ignored-devices="^(veth|docker).*"
+ExecStart=/usr/local/bin/nvidia-gpu-exporter --web.listen-address=:$PORT
 
 [Install]
 WantedBy=multi-user.target
 EOF
         echo "[Daemon]: Reloading daemon"
         sudo systemctl daemon-reload
-        echo "[Daemon]: Enabling node-exporter to start on boot"
-        sudo systemctl enable node_exporter
+        echo "[Daemon]: Enabling nvidia-gpu-exporter to start on boot"
+        sudo systemctl enable nvidia-gpu-exporter
         echo "[Daemon]: Starting service"
         sleep 3
-        sudo systemctl start node_exporter
+        sudo systemctl start nvidia-gpu-exporter
     fi
 
     echo "--------------Add Firewall-----------"
@@ -150,14 +133,13 @@ EOF
         fi
     else 
         echo "[Firewall]: Using iptables"
-        firewall_rule=$(sudo iptables -L INPUT | grep node_exporter)
+        firewall_rule=$(sudo iptables -L INPUT | grep nvidia-gpu-exporter)
         if [[ -z "${firewall_rule}" ]]; then
             echo "[Firewall]: Port $PORT not open, adding rule"
-            sudo iptables -I INPUT 1 -p tcp --dport $PORT -j ACCEPT -m comment --comment "node_exporter"
+            sudo iptables -I INPUT 1 -p tcp --dport $PORT -j ACCEPT -m comment --comment "nvidia-gpu-exporter"
         else
             echo "[Firewall]: Port $PORT already open"
         fi
-
         echo "[Firewall]: Saving rules"
         sudo service iptables save
         echo "[Firewall]: Reloading rules"
@@ -166,9 +148,9 @@ EOF
 }
 
 run(){
-    echo "-----------SETUP NODE EXPORTER ${VERSION}------------"
-    echo "[Setup]: Checking and installing node_exporter:${VERSION} on port ${PORT}"
-    download_file
+    echo "-----------SETUP NVIDIA GPU EXPORTER ${VERSION}------------"
+    echo "[Setup]: Checking and installing nvidia-gpu-exporter:${VERSION} on port ${PORT}"
+    install_exporter
     create_daemon_service
     echo "-----------------------"
     echo "[Setup]: Installation complete"
@@ -176,7 +158,6 @@ run(){
     echo "[Setup]: Check service at http://$(hostname):${PORT}/metrics"
 }
 
-# Display usage information before running
 echo "Supported CLI parameters:"
 usage 0
 run
