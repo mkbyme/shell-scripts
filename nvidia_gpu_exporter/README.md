@@ -7,7 +7,7 @@ Yêu cầu: Mạng mở thông tới github.com
 
 ```sh
 # tải file
-curl -O https://raw.githubusercontent.com/mkbyme/shell-scripts/main/gpu_exporter/install_gpuexporter.sh
+curl -O https://raw.githubusercontent.com/mkbyme/shell-scripts/main/nvidia_gpu_exporter/install_gpuexporter.sh
 sudo bash install_gpuexporter.sh
 ```
 
@@ -30,12 +30,12 @@ sudo bash install_gpuexporter.sh --version 1.3.2
 
 ## Hướng dẫn cài đặt hàng loạt qua anisible
 
-Sử dụng file playbook tại [anisible.yml](/gpu_exporter/anisible.yml)
+Sử dụng file playbook tại [anisible.yml](/nvidia_gpu_exporter/anisible.yml)
 
 Hoặc copy nội dung bên dưới
 
 ```yaml
 tasks:
   - name: Transfer script
-    copy: src=/tmp/script_setup_gpuexporter/install_gpuexporter.sh dest=/tmp/gpu_exporter mode=0755
+    copy: src=/tmp/script_setup_gpuexporter/install_gpuexporter.sh dest=/tmp/nvidia_gpu_exporter mode=0755
 ```
